@@ -1,0 +1,41 @@
+import pandas as pd
+from sklearn.metrics.pairwise import cosine_similarity
+
+# Load the dataset
+df = pd.read_csv('movies.csv')
+
+# Create a unique identifier for each movie
+df['Movie ID'] = df.groupby(['Film', 'Year', 'Genre', 'Lead Studio']).ngroup()
+
+# Create a pivot table with movie IDs as index and audience scores as columns
+pivot_table = df.pivot(index='Movie ID', columns='Audience score %', values='Worldwide Gross')
+
+# Fill missing values with 0
+pivot_table.fillna(0, inplace=True)
+
+# Calculate the cosine similarity between movies
+similarity_matrix = cosine_similarity(pivot_table)
+
+# Create a function to get movie recommendations
+def get_recommendations(movie_title, num_recommendations=5):
+    # Get the index of the movie
+    movie_index = pivot_table.index.get_loc(movie_title)
+    
+    # Get the similarity scores for the movie
+    similarity_scores = similarity_matrix[movie_index]
+    
+    # Get the top N similar movies
+    top_similar_movies = similarity_scores.argsort()[:-num_recommendations-1:-1]
+    
+    # Get the movie titles
+    recommended_movies = pivot_table.index[top_similar_movies]
+    
+    return recommended_movies
+
+# Test the function
+movie_title = 'The Proposal'
+num_recommendations = 5
+recommended_movies = get_recommendations(movie_title, num_recommendations)
+
+print(f"Recommended movies for {movie_title}:")
+print(recommended_movies)
